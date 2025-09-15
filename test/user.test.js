@@ -1,0 +1,90 @@
+import supertest from "supertest";
+import { web } from "../src/application/web.js"
+import { prismaClient } from "../src/application/database.js";
+import { logger } from "../src/application/logging.js";
+
+describe('POST /api/users', function() {
+
+    afterEach(async () => {
+        await prismaClient.user.deleteMany({
+            where: {
+                username: 'test-user'
+            }
+        })
+    })
+
+    it('should can register new user', async () => {
+        const result = await supertest(web)
+            .post('/api/users')
+            .send({
+                name: 'Test User',
+                username: 'test-user',
+                password: 'password'
+            });
+        
+        expect(result.status).toBe(200);
+        expect(result.body.data.name).toBe('Test User');
+        expect(result.body.data.username).toBe('test-user');
+        expect(result.body.data.password).toBeUndefined();
+    });
+
+    it('should reject if username already registered', async () => {
+        let result = await supertest(web)
+            .post('/api/users')
+            .send({
+                name: 'Test User',
+                username: 'test-user',
+                password: 'password'
+            });
+
+        logger.info(result.body);
+        
+        expect(result.status).toBe(200);
+        expect(result.body.data.name).toBe('Test User');
+        expect(result.body.data.username).toBe('test-user');
+        expect(result.body.data.password).toBeUndefined();
+
+        result = await supertest(web)
+            .post('/api/users')
+            .send({
+                name: 'Test User',
+                username: 'test-user',
+                password: 'password'
+            });
+
+        logger.info(result.body);
+        
+        expect(result.status).toBe(400);
+        expect(result.body.errors).toBeDefined();
+    })
+
+    it('should reject if request is invalid', async () => {
+        const result = await supertest(web)
+            .post('/api/users')
+            .send({
+                name: '',
+                username: '',
+                password: ''
+            });
+
+        logger.info(result.body);
+        
+        expect(result.status).toBe(400);
+        expect(result.body.errors).toBeDefined();
+    })
+
+    it('should reject if name more than 100 character', async () => {
+        const result = await supertest(web)
+            .post('/api/users')
+            .send({
+                name: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+                username: 'test-user',
+                password: 'password'
+            });
+
+        logger.info(result.body);
+        
+        expect(result.status).toBe(400);
+        expect(result.body.errors).toBeDefined();
+    })
+})
