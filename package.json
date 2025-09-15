@@ -4,7 +4,7 @@
   "description": "NodeJS RESTful API",
   "main": "src/main.js",
   "scripts": {
-    "test": "jest -i"
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest -i"
   },
   "jest": {
     "transform": {
